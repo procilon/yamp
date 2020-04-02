@@ -37,7 +37,9 @@ public class RequestContainer
     public static RequestContainer decode( ByteBuffer buffer )
     {
         int messageSize = buffer.getInt();
-        ByteBuffer message = buffer.slice().limit( messageSize ).slice();
+        ByteBuffer message = buffer.slice();
+        message.limit( messageSize );
+        
         buffer.position( buffer.position() + messageSize );
         
         CredentialContainer credentialContainer = CredentialContainer.decode( buffer );

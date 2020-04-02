@@ -6,7 +6,6 @@ import java.util.function.Function;
 import java.util.logging.Level;
 
 import de.procilon.oss.yamp.api.shared.RequestContext;
-import de.procilon.oss.yamp.serialization.ErrorMessage;
 import de.procilon.oss.yamp.serialization.Message;
 import de.procilon.oss.yamp.serialization.RequestContainer;
 import de.procilon.oss.yamp.serialization.ResponseContainer;
@@ -24,12 +23,12 @@ public class MessageDispatcher
     {
         try
         {
-            var messageContainer = RequestContainer.decode( input );
-            var credentialType = messageContainer.getCredential().getType();
+            RequestContainer messageContainer = RequestContainer.decode( input );
+            String credentialType = messageContainer.getCredential().getType();
             
-            var context = new RequestContext();
+            RequestContext context = new RequestContext();
             
-            var validator = validatorRegistry.apply( credentialType )
+            CredentialValidator validator = validatorRegistry.apply( credentialType )
                     .orElseThrow( () -> new IllegalArgumentException( "unknown credential type: " + credentialType ) );
             
             if ( !validator.validate( messageContainer.getMessage().slice(), messageContainer.getCredential().getValue().slice(),
@@ -38,19 +37,19 @@ public class MessageDispatcher
                 throw new IllegalStateException( "credential validation failed" );
             }
             
-            var message = Message.decode( messageContainer.getMessage() );
-            var processor = processorRegistry.apply( message.getType() )
+            Message message = Message.decode( messageContainer.getMessage() );
+            MessageProcessor processor = processorRegistry.apply( message.getType() )
                     .orElseThrow( () -> new IllegalArgumentException( "unknown message type: " + message.getType() ) );
             
-            var response = processor.process( message, context );
-            var responseContainer = new ResponseContainer( false, response.encode() );
+            Message response = processor.process( message, context );
+            ResponseContainer responseContainer = ResponseContainer.ofSuccess( response.encode() );
             
             return responseContainer.encode();
         }
         catch ( Throwable t )
         {
             log.log( Level.SEVERE, t.getMessage(), t );
-            return new ResponseContainer( true, ErrorMessage.fromThrowable( t ).encode() ).encode();
+            return ResponseContainer.ofError( t ).encode();
         }
     }
 }

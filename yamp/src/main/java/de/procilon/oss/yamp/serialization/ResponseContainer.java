@@ -45,7 +45,8 @@ public class ResponseContainer
         boolean error = encoded.get() != 0;
         
         int length = encoded.getInt();
-        ByteBuffer message = encoded.slice().limit( length ).slice();
+        ByteBuffer message = encoded.slice();
+        message.limit( length );
         
         encoded.position( encoded.position() + length );
         

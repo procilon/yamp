@@ -36,14 +36,17 @@ public class PeerAPI
     private static <T, R> Function<T, CompletionStage<R>> handled( Function<T, R> f )
     {
         return input -> {
+            CompletableFuture<R> future = new CompletableFuture<>();
             try
             {
-                return CompletableFuture.completedStage( f.apply( input ) );
+                future.complete( f.apply( input ) );
             }
             catch ( RuntimeException e )
             {
-                return CompletableFuture.failedStage( e );
+                future.completeExceptionally( e );
             }
+            
+            return future;
         };
     }
 }
