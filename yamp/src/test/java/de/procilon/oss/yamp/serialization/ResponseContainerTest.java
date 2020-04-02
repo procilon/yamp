@@ -10,7 +10,7 @@ import java.nio.ByteBuffer;
 
 import org.junit.jupiter.api.Test;
 
-import de.procilon.oss.yamp.api.caller.PeerException;
+import de.procilon.oss.yamp.RelayedException;
 
 class ResponseContainerTest
 {
@@ -38,7 +38,7 @@ class ResponseContainerTest
         
         ByteBuffer encoded = responseContainer.encode();
         
-        PeerException thrown = assertThrows( PeerException.class, () -> ResponseContainer.decode( encoded ) );
+        RelayedException thrown = assertThrows( RelayedException.class, () -> ResponseContainer.decode( encoded ) );
         
         assertThat( thrown.getType(), is( UnsupportedOperationException.class.getName() ) );
         assertThat( thrown.getOriginalMessage(), is( message ) );

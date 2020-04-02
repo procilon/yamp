@@ -4,7 +4,7 @@ import static java.nio.ByteBuffer.allocate;
 
 import java.nio.ByteBuffer;
 
-import de.procilon.oss.yamp.api.caller.PeerException;
+import de.procilon.oss.yamp.RelayedException;
 import lombok.Value;
 
 @Value
@@ -54,7 +54,7 @@ public class ResponseContainer
         {
             ErrorMessage errorMessage = ErrorMessage.decode( message );
             
-            throw new PeerException( errorMessage.getType(), errorMessage.getMessage() );
+            throw new RelayedException( errorMessage.getType(), errorMessage.getMessage() );
         }
         else
         {
