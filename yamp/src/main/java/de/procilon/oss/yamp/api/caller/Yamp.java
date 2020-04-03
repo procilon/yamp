@@ -18,9 +18,9 @@ import lombok.RequiredArgsConstructor;
  * @author fichtelmannm
  */
 @RequiredArgsConstructor
-public class PeerAPI
+public class Yamp
 {
-    private final Transport                              transport;
+    private final YampTransport                              transport;
     private final Function<Message, CredentialContainer> authenticator;
     
     public <T extends Response> CompletionStage<T> process( Request<T> request, Function<Message, T> decoder )

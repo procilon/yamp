@@ -14,7 +14,7 @@ import lombok.extern.java.Log;
 
 @Log
 @AllArgsConstructor
-public class MessageDispatcher
+public class YampDispatcher
 {
     private final Function<String, Optional<CredentialValidator>> validatorRegistry;
     private final Function<String, Optional<MessageProcessor>>    processorRegistry;
