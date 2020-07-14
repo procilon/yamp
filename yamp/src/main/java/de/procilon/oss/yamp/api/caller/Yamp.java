@@ -2,6 +2,7 @@ package de.procilon.oss.yamp.api.caller;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
 import de.procilon.oss.yamp.api.shared.Request;
@@ -14,11 +15,12 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * @author wolffs
+ * @author fichtelmannm
  */
 @RequiredArgsConstructor
-public class PeerAPI
+public class Yamp
 {
-    private final Transport                              transport;
+    private final YampTransport                              transport;
     private final Function<Message, CredentialContainer> authenticator;
     
     public <T extends Response> CompletionStage<T> process( Request<T> request, Function<Message, T> decoder )
@@ -31,6 +33,29 @@ public class PeerAPI
                 .thenApply( ResponseContainer::getMessage )
                 .thenCompose( handled( Message::decode ) )
                 .thenCompose( handled( decoder::apply ) );
+    }
+    
+    public <T extends Response> T processSync( Request<T> request, Function<Message, T> decoder ) throws InterruptedException
+    {
+        try
+        {
+            return process( request, decoder ).toCompletableFuture().get();
+        }
+        catch ( ExecutionException e )
+        {
+            if ( e.getCause() == null )
+            {
+                throw new IllegalStateException( e );
+            }
+            if ( e.getCause() instanceof RuntimeException )
+            {
+                throw (RuntimeException) e.getCause();
+            }
+            else
+            {
+                throw new IllegalStateException( e.getCause() );
+            }
+        }
     }
     
     private static <T, R> Function<T, CompletionStage<R>> handled( Function<T, R> f )
