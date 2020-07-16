@@ -16,7 +16,7 @@ public class ErrorMessage
     
     public static ErrorMessage fromThrowable( Throwable t )
     {
-        return new ErrorMessage( t.getClass().getName(), t.getMessage() );
+        return new ErrorMessage( t.getClass().getName(), String.valueOf( t.getMessage() ) );
     }
     
     public ByteBuffer encode()
