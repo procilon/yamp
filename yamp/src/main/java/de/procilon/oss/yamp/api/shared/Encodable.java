@@ -4,6 +4,8 @@ import de.procilon.oss.yamp.serialization.Message;
 
 public interface Encodable
 {
+    int INITIAL_VERSION = 1;
+    
     byte[] encode();
     
     default String type()
@@ -13,7 +15,7 @@ public interface Encodable
     
     default int version()
     {
-        return 1;
+        return INITIAL_VERSION;
     }
     
     default Message toMessage()
