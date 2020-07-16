@@ -21,6 +21,7 @@
     <modules>
         <module>yamp</module>
         <module>yamp-transport-http</module>
+        <module>yamp-transport-websocket</module>
     </modules>
 
     <dependencies>
