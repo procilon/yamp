@@ -5,21 +5,18 @@ import static java.util.Collections.emptyMap;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.SecureRandom;
-import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
-import javax.websocket.CloseReason;
-import javax.websocket.OnClose;
-import javax.websocket.OnMessage;
-import javax.websocket.OnOpen;
 import javax.websocket.Session;
 
 import de.procilon.oss.yamp.YampException;
 import de.procilon.oss.yamp.api.caller.YampTransport;
+import lombok.Getter;
 
 /**
  * A {@link YampTransport} that transmits message over a websocket connection.
@@ -30,7 +27,24 @@ import de.procilon.oss.yamp.api.caller.YampTransport;
  * <code>
  * &#64;ServerEndoint("/yamp")
  * public class MyYampWebsocketCaller 
- *        extends YampJavaxWebsocketTransport {}
+ *        extends YampJavaxWebsocketTransport {
+ * 
+ *   &#64;OnOpen
+ *   public void onOpen(Session session) {
+ *     super.onOpen(session);
+ *   }
+ * 
+ *   &#64;OnClose
+ *   public void onClose(Session session, CloseReason closeReason ) {
+ *     super.onClose(session, closeReason);
+ *   }
+ * 
+ *   &#64;OnMessage
+ *   public void onClose(Session session, CloseReason closeReason ) {
+ *     super.onMessage(session, closeReason);
+ *   }
+ * 
+ * }
  * </code>
  * </pre>
  * 
@@ -40,21 +54,40 @@ import de.procilon.oss.yamp.api.caller.YampTransport;
  * <code>
  * &#64;ClientEndoint
  * public class MyYampWebsocketCaller 
- *        extends YampJavaxWebsocketTransport {}
+ *        extends YampJavaxWebsocketTransport {
+ * 
+ *   &#64;OnOpen
+ *   public void onOpen(Session session) {
+ *     super.onOpen(session);
+ *   }
+ * 
+ *   &#64;OnClose
+ *   public void onClose(Session session, CloseReason closeReason ) {
+ *     super.onClose(session, closeReason);
+ *   }
+ * 
+ *   &#64;OnMessage
+ *   public void onClose(Session session, CloseReason closeReason ) {
+ *     super.onMessage(session, closeReason);
+ *   }
+ * 
+ * }
  * </code>
  * </pre>
  * 
  * @author fichtelmannm
  *
+ * @see DefaultYampWebsocketTransport
+ *
  */
+@Getter
 public class YampJavaxWebsocketTransport implements YampTransport
 {
-    private static final SecureRandom                              rng               = new SecureRandom();
+    private static final SecureRandom                                    rng               = new SecureRandom();
     
-    private Queue<Session>                                         sessions          = new LinkedList<>();
-    private Map<Long, CompletableFuture<ByteBuffer>>               pendingRequests   = new HashMap<>();
-    
-    private Map<Session, Map<Long, CompletableFuture<ByteBuffer>>> requestsOnSession = new HashMap<>();
+    private final Queue<Session>                                         sessions          = new ConcurrentLinkedQueue<>();
+    private final Map<Long, CompletableFuture<ByteBuffer>>               pendingRequests   = new ConcurrentHashMap<>();
+    private final Map<Session, Map<Long, CompletableFuture<ByteBuffer>>> requestsOnSession = new ConcurrentHashMap<>();
     
     /**
      * Adds the connected session to the queue of sessions to send messages to.
@@ -62,7 +95,6 @@ public class YampJavaxWebsocketTransport implements YampTransport
      * @param session
      *            the newly connected session.
      */
-    @OnOpen
     public void onOpen( Session session )
     {
         sessions.add( session );
@@ -73,11 +105,8 @@ public class YampJavaxWebsocketTransport implements YampTransport
      * 
      * @param session
      *            the session that disconnected
-     * @param closeReason
-     *            the reason for closing the connection
      */
-    @OnClose
-    public void onClose( Session session, CloseReason closeReason )
+    public void onClose( Session session )
     {
         sessions.remove( session );
         
@@ -96,16 +125,19 @@ public class YampJavaxWebsocketTransport implements YampTransport
      * @param message
      *            the inbound binary message
      */
-    @OnMessage
     public void onMessage( ByteBuffer message )
     {
         long id = message.getLong();
+        
+        ByteBuffer messageCopy = ByteBuffer.allocate( message.remaining() );
+        messageCopy.put( message )
+                .flip();
         
         CompletableFuture<ByteBuffer> response = pendingRequests.get( id );
         
         if ( response != null )
         {
-            response.complete( message );
+            response.complete( messageCopy );
             pendingRequests.remove( id );
         } // TODO else handle missing request
     }
@@ -119,27 +151,34 @@ public class YampJavaxWebsocketTransport implements YampTransport
             return CompletableFuture.failedStage( new YampException( "peer not available" ) );
         }
         
-        long requestId = rng.nextLong();
-        
-        ByteBuffer requestWithId = ByteBuffer.allocate( Long.BYTES + request.remaining() )
-                .putLong( requestId )
-                .put( request )
-                .flip();
-        
         try
         {
-            session.getBasicRemote().sendBinary( requestWithId );
+            long requestId = rng.nextLong();
+            
+            ByteBuffer requestWithId = ByteBuffer.allocate( Long.BYTES + request.remaining() )
+                    .putLong( requestId )
+                    .put( request )
+                    .flip();
+            
+            try
+            {
+                session.getBasicRemote().sendBinary( requestWithId );
+            }
+            catch ( IOException e )
+            {
+                return CompletableFuture.failedStage( e );
+            }
+            
+            CompletableFuture<ByteBuffer> responsePromise = new CompletableFuture<>();
+            pendingRequests.put( requestId, responsePromise );
+            requestsOnSession.computeIfAbsent( session, s -> new ConcurrentHashMap<>() )
+                    .put( requestId, responsePromise );
+            
+            return responsePromise;
         }
-        catch ( IOException e )
+        finally
         {
-            return CompletableFuture.failedStage( e );
+            sessions.add( session );
         }
-        
-        CompletableFuture<ByteBuffer> responsePromise = new CompletableFuture<>();
-        pendingRequests.put( requestId, responsePromise );
-        requestsOnSession.computeIfAbsent( session, s -> new HashMap<>() )
-                .put( requestId, responsePromise );
-        
-        return responsePromise;
     }
 }

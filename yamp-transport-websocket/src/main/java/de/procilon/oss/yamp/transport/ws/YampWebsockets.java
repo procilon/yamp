@@ -5,7 +5,7 @@ import java.nio.ByteBuffer;
 import de.procilon.oss.yamp.api.processor.YampDispatcher;
 
 /**
- * Utility functions for YAMP WebSocket transport handling.
+ * Utility functions for YAMP WebSocket transport handling on the processing side.
  * 
  * @author fichtelmannm
  *
