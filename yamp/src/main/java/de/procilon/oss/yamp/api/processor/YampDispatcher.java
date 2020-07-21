@@ -9,10 +9,13 @@ import de.procilon.oss.yamp.api.shared.RequestContext;
 import de.procilon.oss.yamp.serialization.Message;
 import de.procilon.oss.yamp.serialization.RequestContainer;
 import de.procilon.oss.yamp.serialization.ResponseContainer;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.extern.java.Log;
 
 @Log
+@NoArgsConstructor( force = true, access = AccessLevel.PACKAGE )
 @AllArgsConstructor
 public class YampDispatcher
 {
