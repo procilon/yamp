@@ -42,6 +42,23 @@ public class ResponseContainer
     
     public static ResponseContainer decode( ByteBuffer encoded )
     {
+        ResponseContainer container = rawDecode( encoded );
+        
+        if ( container.isError() )
+        {
+            ErrorMessage errorMessage = ErrorMessage.decode( container.getMessage() );
+            
+            throw new RelayedException( errorMessage.getType(), errorMessage.getMessage() );
+        }
+        else
+        {
+            
+            return container;
+        }
+    }
+    
+    public static ResponseContainer rawDecode( ByteBuffer encoded )
+    {
         boolean error = encoded.get() != 0;
         
         int length = encoded.getInt();
@@ -50,16 +67,6 @@ public class ResponseContainer
         
         encoded.position( encoded.position() + length );
         
-        if ( error )
-        {
-            ErrorMessage errorMessage = ErrorMessage.decode( message );
-            
-            throw new RelayedException( errorMessage.getType(), errorMessage.getMessage() );
-        }
-        else
-        {
-            
-            return ofSuccess( message );
-        }
+        return new ResponseContainer( error, message );
     }
 }
