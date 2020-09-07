@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>de.procilon.oss</groupId>
     <artifactId>yamp-parent</artifactId>
-    <version>1.1.0-SNAPSHOT</version>
+    <version>1.1.0</version>
     <description>Yet another Message Protocol</description>
     <packaging>pom</packaging>
     <licenses>
