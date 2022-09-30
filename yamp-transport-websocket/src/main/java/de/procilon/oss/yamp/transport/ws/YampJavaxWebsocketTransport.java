@@ -17,6 +17,7 @@ import javax.websocket.Session;
 import de.procilon.oss.yamp.YampException;
 import de.procilon.oss.yamp.api.caller.YampTransport;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 /**
  * A {@link YampTransport} that transmits message over a websocket connection.
@@ -81,6 +82,7 @@ import lombok.Getter;
  *
  */
 @Getter
+@RequiredArgsConstructor
 public class YampJavaxWebsocketTransport implements YampTransport
 {
     private static final SecureRandom                                    rng               = new SecureRandom();
@@ -88,6 +90,16 @@ public class YampJavaxWebsocketTransport implements YampTransport
     private final Queue<Session>                                         sessions          = new ConcurrentLinkedQueue<>();
     private final Map<Long, CompletableFuture<ByteBuffer>>               pendingRequests   = new ConcurrentHashMap<>();
     private final Map<Session, Map<Long, CompletableFuture<ByteBuffer>>> requestsOnSession = new ConcurrentHashMap<>();
+    
+    private final int                                                    maxPending;
+    
+    /**
+     * Create a new {@link YampJavaxWebsocketTransport} with no effective limit to pending request queue size.
+     */
+    public YampJavaxWebsocketTransport()
+    {
+        this( Integer.MAX_VALUE );
+    }
     
     /**
      * Adds the connected session to the queue of sessions to send messages to.
@@ -149,6 +161,11 @@ public class YampJavaxWebsocketTransport implements YampTransport
         if ( session == null )
         {
             return CompletableFuture.failedStage( new YampException( "peer not available" ) );
+        }
+        
+        if ( pendingRequests.size() >= maxPending )
+        {
+            return CompletableFuture.failedStage( new YampException( "task queue is full" ) );
         }
         
         try

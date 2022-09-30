@@ -1,10 +1,16 @@
 package de.procilon.oss.yamp.api.caller;
 
+import static java.util.Objects.nonNull;
+
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
+import de.procilon.oss.yamp.YampException;
 import de.procilon.oss.yamp.api.shared.Request;
 import de.procilon.oss.yamp.api.shared.Response;
 import de.procilon.oss.yamp.serialization.CredentialContainer;
@@ -20,8 +26,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class Yamp
 {
-    private final YampTransport                              transport;
+    private final YampTransport                          transport;
     private final Function<Message, CredentialContainer> authenticator;
+    private final YampOptions                            options;
+    
+    public Yamp( YampTransport transport, Function<Message, CredentialContainer> authenticator )
+    {
+        this( transport, authenticator, YampOptions.EMPTY );
+    }
     
     public <T extends Response> CompletionStage<T> process( Request<T> request, Function<Message, T> decoder )
     {
@@ -39,7 +51,16 @@ public class Yamp
     {
         try
         {
-            return process( request, decoder ).toCompletableFuture().get();
+            CompletableFuture<T> task = process( request, decoder ).toCompletableFuture();
+            Duration timeout = options.getTimeout();
+            if ( nonNull( timeout ) )
+            {
+                return task.get( timeout.toMillis(), TimeUnit.MILLISECONDS );
+            }
+            else
+            {
+                return task.get();
+            }
         }
         catch ( ExecutionException e )
         {
@@ -55,6 +76,10 @@ public class Yamp
             {
                 throw new IllegalStateException( e.getCause() );
             }
+        }
+        catch ( TimeoutException e )
+        {
+            throw new YampException( "task timed out after " + options.getTimeout(), e );
         }
     }
     
@@ -74,4 +99,5 @@ public class Yamp
             return future;
         };
     }
+    
 }
