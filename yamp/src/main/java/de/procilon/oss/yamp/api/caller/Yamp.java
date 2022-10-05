@@ -55,7 +55,16 @@ public class Yamp
             Duration timeout = options.getTimeout();
             if ( nonNull( timeout ) )
             {
-                return task.get( timeout.toMillis(), TimeUnit.MILLISECONDS );
+                long start = System.currentTimeMillis();
+                try
+                {
+                    return task.get( timeout.toMillis(), TimeUnit.MILLISECONDS );
+                }
+                catch ( TimeoutException e )
+                {
+                    long end = System.currentTimeMillis();
+                    throw new YampException( "task timed out after " + (end - start) + "ms", e );
+                }
             }
             else
             {
@@ -76,10 +85,6 @@ public class Yamp
             {
                 throw new IllegalStateException( e.getCause() );
             }
-        }
-        catch ( TimeoutException e )
-        {
-            throw new YampException( "task timed out after " + options.getTimeout(), e );
         }
     }
     
