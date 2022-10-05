@@ -22,9 +22,9 @@
     </properties>
 
     <scm>
-        <url>https://github.com/MaxFichtelmann/yamp</url>
-        <connection>scm:git:ssh://git@github.com:MaxFichtelmann/yamp.git</connection>
-        <developerConnection>scm:git:ssh://git@github.com:MaxFichtelmann/yamp.git</developerConnection>
+        <url>https://github.com/procilon/yamp</url>
+        <connection>scm:git:https://github.com/procilon/yamp.git</connection>
+	<developerConnection>scm:git:https://github.com/procilon/yamp.git</developerConnection>
     </scm>
     <modules>
         <module>yamp</module>
