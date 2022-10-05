@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>de.procilon.oss</groupId>
     <artifactId>yamp-parent</artifactId>
-    <version>1.2.0</version>
+    <version>1.2.1-SNAPSHOT</version>
     <description>Yet another Message Protocol</description>
     <packaging>pom</packaging>
     <licenses>
@@ -23,7 +23,7 @@
         <url>https://github.com/procilon/yamp</url>
         <connection>scm:git:https://github.com/procilon/yamp.git</connection>
 	<developerConnection>scm:git:https://github.com/procilon/yamp.git</developerConnection>
-      <tag>1.2.0</tag>
+      <tag>HEAD</tag>
   </scm>
     <modules>
         <module>yamp</module>
